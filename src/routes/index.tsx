@@ -60,13 +60,16 @@ function MathText({ text, className = "" }: { text: string; className?: string }
 
 
 function ChatMessage({ text }: { text: string }) {
-  // Normalize escaped Markdown sometimes returned by the model, then render each paragraph/list item separately.
-  const normalized = text.replace(/\r\n?/g, "\n").replace(/\\([*#_~\x60>-])/g, "$1").replace(/\\n/g, "\n").trim();
+  const normalized = text
+    .replace(/\\r\\n?/g, "\n")
+    .replace(/\\\\([*#_~`>-])/g, "$1")
+    .replace(/\\\\n/g, "\n")
+    .trim();
   const lines = normalized.split("\n");
-  const inline = (value: string) => value.split(/(\*\*[^*]+\*\*|\*[^*]+\*|\x60[^\x60]+\x60)/g).map((part, i) => {
+  const inline = (value: string) => value.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g).map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) return <strong key={i}>{part.slice(2, -2)}</strong>;
     if (part.startsWith("*") && part.endsWith("*")) return <em key={i}>{part.slice(1, -1)}</em>;
-    if (part.startsWith("\x60") && part.endsWith("\x60")) return <code key={i}>{part.slice(1, -1)}</code>;
+    if (part.startsWith("`") && part.endsWith("`")) return <code key={i}>{part.slice(1, -1)}</code>;
     return <MathText key={i} text={part} />;
   });
   return <div className="chat-message">{lines.map((line, i) => {

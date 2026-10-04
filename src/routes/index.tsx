@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useRef, type ClipboardEvent, type ChangeEvent } from "react";
+import { useState, useRef, useEffect, type ClipboardEvent, type ChangeEvent } from "react";
 import { ArrowRight, BookOpen, Check, ChevronDown, CircleHelp, GraduationCap, ImagePlus, Lightbulb, MessageCircle, RefreshCw, Sparkles, Target, Upload, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Index });
@@ -7,6 +7,56 @@ export const Route = createFileRoute("/")({ component: Index });
 const grades = ["4º ano", "5º ano", "6º ano", "7º ano", "8º ano", "9º ano", "1º ano EM", "2º ano EM", "3º ano EM"];
 
 
+
+
+declare global {
+  interface Window { katex?: { renderToString: (math: string, options?: Record<string, unknown>) => string } }
+}
+
+function MathText({ text, className = "" }: { text: string; className?: string }) {
+  const [ready, setReady] = useState(() => typeof window !== "undefined" && !!window.katex);
+  useEffect(() => {
+    if (window.katex) { setReady(true); return; }
+    const existing = document.querySelector<HTMLScriptElement>('script[data-katex="true"]');
+    const script = existing ?? document.createElement("script");
+    const finish = () => setReady(!!window.katex);
+    if (!existing) {
+      script.src = "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js";
+      script.async = true;
+      script.dataset.katex = "true";
+      script.onload = finish;
+      document.head.appendChild(script);
+    } else {
+      script.addEventListener("load", finish, { once: true });
+    }
+    const css = document.querySelector('link[data-katex-css="true"]') ?? document.createElement("link");
+    if (!css.parentNode) {
+      css.rel = "stylesheet";
+      css.href = "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css";
+      css.dataset.katexCss = "true";
+      document.head.appendChild(css);
+    }
+    return () => { script.removeEventListener("load", finish); };
+  }, []);
+  const renderParts = () => {
+    const parts: { value: string; math: boolean; display: boolean }[] = [];
+    const pattern = /(\\\\\[[\\s\\S]*?\\\\\]|\\$\\$[\\s\\S]*?\\$\\$|\\\\\\([\\s\\S]*?\\\\\\))/g;
+    let last = 0;
+    for (const match of text.matchAll(pattern)) {
+      const index = match.index ?? 0;
+      if (index > last) parts.push({ value: text.slice(last, index), math: false, display: false });
+      const raw = match[0];
+      const display = raw.startsWith("\\\\[") || raw.startsWith("$");
+      const value = display ? raw.slice(2, -2) : raw.slice(2, -2);
+      parts.push({ value, math: true, display });
+      last = index + raw.length;
+    }
+    if (last < text.length || parts.length === 0) parts.push({ value: text.slice(last), math: false, display: false });
+    return parts;
+  };
+  if (!ready || !window.katex) return <span className={className}>{text}</span>;
+  return <div className={`math-text ${className}`}>{renderParts().map((part, i) => part.math ? <span key={i} className={part.display ? "math-display" : "math-inline"} dangerouslySetInnerHTML={{ __html: window.katex!.renderToString(part.value, { displayMode: part.display, throwOnError: false, strict: "ignore" }) }} /> : <span key={i}>{part.value}</span>)}</div>;
+}
 
 function Index() {
   const [grade, setGrade] = useState("9º ano");
@@ -136,8 +186,8 @@ function Index() {
           <div className="field-grid"><label className="field-label">QUAL É O SEU ANO?<span className="select-wrap"><select value={grade} onChange={(e) => chooseGrade(e.target.value)}>{grades.map((g) => <option key={g}>{g}</option>)}</select><ChevronDown size={17} /></span></label><label className="field-label">QUAL MATÉRIA OU ASSUNTO?<span className="topic-input-wrap"><input className="topic-input" value={topic} onChange={(e) => { setTopic(e.target.value); setGeneratedExercises([]); }} placeholder="Ex.: equação do 2º grau, frações..." /><small>Escreva com suas palavras. A IA interpreta o tema.</small></span></label></div>
           <div className="screenshot-area"><div className="screenshot-heading"><ImagePlus size={18}/><div><strong>Tem uma questão em print?</strong><small>Cole com Ctrl+V ou selecione até 3 imagens (PNG, JPG ou WEBP, até 5 MB cada).</small></div></div><input ref={screenshotInput} className="screenshot-file-input" type="file" accept="image/*" multiple onChange={handleScreenshotSelect}/><button type="button" className="screenshot-add" onClick={()=>screenshotInput.current?.click()} disabled={screenshots.length>=3}><Upload size={15}/> Adicionar prints ({screenshots.length}/3)</button>{screenshots.length>0&&<div className="screenshot-list">{screenshots.map((item,i)=><div className="screenshot-thumb" key={item.dataUrl}><img src={item.dataUrl} alt={item.name}/><span>Print {i+1}</span><button type="button" onClick={()=>setScreenshots(current=>current.filter((_,j)=>j!==i))} aria-label={`Remover print ${i+1}`}><X size={14}/></button></div>)}</div>}{generationError&&!isGenerating&&<p className="screenshot-error">{generationError}</p>}</div><div className="difficulty-row"><span className="field-label">QUAL É O CLIMA DE HOJE?</span><div className="difficulty-options">{["Quero o básico", "No meu ritmo", "Pode desafiar"].map((d) => <button key={d} className={difficulty === d ? "difficulty-option active" : "difficulty-option"} onClick={() => setDifficulty(d)}>{d === "Quero o básico" ? "🌱" : d === "No meu ritmo" ? "🌿" : "🚀"} {d}</button>)}</div></div>
           <div className="mode-actions"><button className="mode-button primary-mode" onClick={generateExercises}><span className="mode-symbol"><Target size={19} /></span><span><strong>Quero praticar</strong><small>A IA cria exercícios para o seu ano</small></span><ArrowRight size={18} /></button><button className="mode-button" onClick={() => setMode("doubt")}><span className="mode-symbol question-symbol"><CircleHelp size={19} /></span><span><strong>Tenho uma dúvida</strong><small>Vamos pensar juntos</small></span><ArrowRight size={18} /></button></div>
-          {mode === "practice" && <div className="demo-panel"><div className="demo-top"><span className="demo-tag">EXERCÍCIOS PERSONALIZADOS COM IA</span><button className="close-demo" onClick={() => setMode(null)} aria-label="Fechar"><X size={17} /></button></div><p className="demo-meta">{grade} · {topic} · {difficulty}</p>{isGenerating ? <div className="ai-loading"><Sparkles size={22} /><h3>Preparando seus exercícios...</h3><p>A IA está interpretando o assunto e adaptando a explicação ao seu ano escolar.</p></div> : generationError ? <div className="ai-error"><p>{generationError}</p><button className="ai-retry" onClick={generateExercises}>Tentar novamente <RefreshCw size={15} /></button></div> : generatedExercises.length > 0 ? <><p className="ai-intro">Criamos {generatedExercises.length} questões sobre <strong>{topic}</strong>, com linguagem e dificuldade adequadas ao {grade}.</p>{generatedExercises.map((exercise, index) => <article className="generated-exercise" key={index}><div className="exercise-count">QUESTÃO {index + 1} DE {generatedExercises.length}</div><h3>{exercise.question}</h3><div className="answer-options">{exercise.options.map((option, optionIndex) => <button key={optionIndex} onClick={() => setExerciseAnswers(prev => ({...prev, [index]: optionIndex}))} className={exerciseAnswers[index] === optionIndex ? "answer-option selected" : "answer-option"}><span>{String.fromCharCode(65 + optionIndex)}</span>{option}{revealedExercises[index] && optionIndex === exercise.answerIndex && <Check size={17} />}</button>)}</div>{exerciseAnswers[index] !== undefined && <button className="reveal-answer" onClick={() => setRevealedExercises(prev => ({...prev, [index]: true}))}>{revealedExercises[index] ? "Explicação exibida" : "Ver resposta e explicação"} <ArrowRight size={15} /></button>}{revealedExercises[index] && <div className={exerciseAnswers[index] === exercise.answerIndex ? "feedback correct" : "feedback incorrect"}><strong>{exerciseAnswers[index] === exercise.answerIndex ? "Boa! Você acertou." : "Vamos aprender com essa tentativa."}</strong><p><strong>Resposta:</strong> {exercise.options[exercise.answerIndex]}</p><p>{exercise.explanation}</p>{exercise.steps?.length > 0 && <ol>{exercise.steps.map((step, stepIndex) => <li key={stepIndex}>{step}</li>)}</ol>}</div>}</article>)}<button className="ai-retry" onClick={generateExercises}>Gerar novos exercícios <RefreshCw size={15} /></button></> : <p>Peça para gerar os exercícios para começar.</p>}</div>}
-          {mode === "doubt" && <div className="demo-panel"><div className="demo-top"><span className="demo-tag">ESPAÇO DE DÚVIDAS</span><button className="close-demo" onClick={() => setMode(null)} aria-label="Fechar"><X size={17} /></button></div><h3>O que está pegando?</h3><p className="doubt-intro">Escreva sua dúvida ou envie prints da questão. Você pode colar imagens com Ctrl+V na área de estudo ou usar o botão acima.</p><div className="chat-history">{chat.map((item, i) => <div key={i} className={item.from === "you" ? "chat-bubble user-bubble" : "chat-bubble friend-bubble"}>{item.text}</div>)}</div>{doubtError&&<p className="screenshot-error">{doubtError}</p>}{isSendingDoubt&&<p className="ai-loading">Analisando sua dúvida e os prints...</p>}<form className="doubt-form" onSubmit={e=>{e.preventDefault();void sendDoubt();}}><input value={doubt} onChange={e=>setDoubt(e.target.value)} placeholder="Escreva sua dúvida..."/><button type="submit" aria-label="Enviar dúvida" disabled={isSendingDoubt||(!doubt.trim()&&screenshots.length===0)}><ArrowRight size={18}/></button></form></div>}
+          {mode === "practice" && <div className="demo-panel"><div className="demo-top"><span className="demo-tag">EXERCÍCIOS PERSONALIZADOS COM IA</span><button className="close-demo" onClick={() => setMode(null)} aria-label="Fechar"><X size={17} /></button></div><p className="demo-meta">{grade} · {topic} · {difficulty}</p>{isGenerating ? <div className="ai-loading"><Sparkles size={22} /><h3>Preparando seus exercícios...</h3><p>A IA está interpretando o assunto e adaptando a explicação ao seu ano escolar.</p></div> : generationError ? <div className="ai-error"><p>{generationError}</p><button className="ai-retry" onClick={generateExercises}>Tentar novamente <RefreshCw size={15} /></button></div> : generatedExercises.length > 0 ? <><p className="ai-intro">Criamos {generatedExercises.length} questões sobre <strong>{topic}</strong>, com linguagem e dificuldade adequadas ao {grade}.</p>{generatedExercises.map((exercise, index) => <article className="generated-exercise" key={index}><div className="exercise-count">QUESTÃO {index + 1} DE {generatedExercises.length}</div><MathText text={exercise.question} className="exercise-question" /><div className="answer-options">{exercise.options.map((option, optionIndex) => <button key={optionIndex} onClick={() => setExerciseAnswers(prev => ({...prev, [index]: optionIndex}))} className={exerciseAnswers[index] === optionIndex ? "answer-option selected" : "answer-option"}><span>{String.fromCharCode(65 + optionIndex)}</span><MathText text={option} className="option-math" />{revealedExercises[index] && optionIndex === exercise.answerIndex && <Check size={17} />}</button>)}</div>{exerciseAnswers[index] !== undefined && <button className="reveal-answer" onClick={() => setRevealedExercises(prev => ({...prev, [index]: true}))}>{revealedExercises[index] ? "Explicação exibida" : "Ver resposta e explicação"} <ArrowRight size={15} /></button>}{revealedExercises[index] && <div className={exerciseAnswers[index] === exercise.answerIndex ? "feedback correct" : "feedback incorrect"}><strong>{exerciseAnswers[index] === exercise.answerIndex ? "Boa! Você acertou." : "Vamos aprender com essa tentativa."}</strong><p><strong>Resposta:</strong> {exercise.options[exercise.answerIndex]}</p><MathText text={exercise.explanation} className="feedback-math" />{exercise.steps?.length > 0 && <ol>{exercise.steps.map((step, stepIndex) => <li key={stepIndex}><MathText text={step} /></li>)}</ol>}</div>}</article>)}<button className="ai-retry" onClick={generateExercises}>Gerar novos exercícios <RefreshCw size={15} /></button></> : <p>Peça para gerar os exercícios para começar.</p>}</div>}
+          {mode === "doubt" && <div className="demo-panel"><div className="demo-top"><span className="demo-tag">ESPAÇO DE DÚVIDAS</span><button className="close-demo" onClick={() => setMode(null)} aria-label="Fechar"><X size={17} /></button></div><h3>O que está pegando?</h3><p className="doubt-intro">Escreva sua dúvida ou envie prints da questão. Você pode colar imagens com Ctrl+V na área de estudo ou usar o botão acima.</p><div className="chat-history">{chat.map((item, i) => <div key={i} className={item.from === "you" ? "chat-bubble user-bubble" : "chat-bubble friend-bubble"}><MathText text={item.text} /></div>)}</div>{doubtError&&<p className="screenshot-error">{doubtError}</p>}{isSendingDoubt&&<p className="ai-loading">Analisando sua dúvida e os prints...</p>}<form className="doubt-form" onSubmit={e=>{e.preventDefault();void sendDoubt();}}><input value={doubt} onChange={e=>setDoubt(e.target.value)} placeholder="Escreva sua dúvida..."/><button type="submit" aria-label="Enviar dúvida" disabled={isSendingDoubt||(!doubt.trim()&&screenshots.length===0)}><ArrowRight size={18}/></button></form></div>}
           <p className="panel-footnote"><Lightbulb size={15} /> Sem pressão: você pode mudar de ideia quando quiser.</p>
         </div>
       </section>

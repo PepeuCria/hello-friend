@@ -40,13 +40,13 @@ function MathText({ text, className = "" }: { text: string; className?: string }
   }, []);
   const renderParts = () => {
     const parts: { value: string; math: boolean; display: boolean }[] = [];
-    const pattern = /(\\\\\[[\\s\\S]*?\\\\\]|\\$\\$[\\s\\S]*?\\$\\$|\\\\\\([\\s\\S]*?\\\\\\))/g;
+    const pattern = /(\\\[[\s\S]*?\\\]|\$\$[\s\S]*?\$\$|\\\([\s\S]*?\\\))/g;
     let last = 0;
     for (const match of text.matchAll(pattern)) {
       const index = match.index ?? 0;
       if (index > last) parts.push({ value: text.slice(last, index), math: false, display: false });
       const raw = match[0];
-      const display = raw.startsWith("\\\\[") || raw.startsWith("$");
+      const display = raw.startsWith("\\\\[") || raw.startsWith("$$");
       const value = display ? raw.slice(2, -2) : raw.slice(2, -2);
       parts.push({ value, math: true, display });
       last = index + raw.length;

@@ -22,3 +22,12 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+
+## Ativar a geração de exercícios por IA
+
+A tela de estudo envia o ano escolar, o assunto digitado pelo aluno e o nível de dificuldade para a rota de servidor `/api/generate-exercises`. O servidor usa a API da OpenAI para criar cinco questões com alternativas, gabarito e explicação.
+
+Configure `OPENAI_API_KEY` como variável de ambiente **secreta no ambiente que hospeda o site**. Opcionalmente, defina `OPENAI_MODEL` (padrão: `gpt-4.1-mini`). O arquivo `.env.example` mostra os nomes das variáveis, sem conter uma chave real. Nunca coloque a chave em variáveis `VITE_*`, no código do navegador ou em commits públicos.
+
+Sem a chave configurada, a interface mostra uma mensagem explicando que a IA ainda precisa ser ativada. A geração exige acesso à API e pode gerar custos de uso.

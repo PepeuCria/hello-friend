@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/generate-exercises")({
           if (!topic) return Response.json({ error: "Escreva a matéria ou o assunto que deseja estudar." }, { status: 400 });
           if (!allowedDifficulties.has(difficulty)) return Response.json({ error: "Selecione um nível de dificuldade válido." }, { status: 400 });
 
-          const apiKey = process.env.OPENAI_API_KEY;
+          const apiKey = process.env["OPENAI_API_KEY"];
           if (!apiKey) return Response.json({ error: "A IA ainda não está ativada neste site. O administrador precisa configurar a chave OPENAI_API_KEY no ambiente do servidor." }, { status: 503 });
 
           const instructions = [
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/api/generate-exercises")({
             method: "POST",
             headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
             body: JSON.stringify({
-              model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
+              model: process.env["OPENAI_MODEL"] || "gpt-4.1-mini",
               temperature: 0.6,
               response_format: { type: "json_object" },
               messages: [

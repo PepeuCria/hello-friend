@@ -21,6 +21,7 @@ export const Route = createFileRoute("/api/ask-doubt")({
             "Responda em português brasileiro e com linguagem adequada ao ano escolar. Analise imagens, enunciados, símbolos, tabelas e diagramas. Se algo estiver cortado ou ilegível, explique o que não conseguiu ler e peça uma imagem mais nítida; nunca invente dados.",
             "Resolva questões passo a passo e explique por que cada etapa funciona. Se o aluno pedir apenas uma dica, não entregue logo a solução completa. Se houver várias questões, pergunte qual quer trabalhar ou comece pela mais claramente indicada.",
             "Confira os cálculos, não julgue o aluno e não afirme ter lido algo que não está visível."
+            "Formate a resposta com Markdown simples e legível: parágrafos curtos separados por uma linha em branco; títulos com ##; listas com -; destaque com **texto**. Nunca escape os símbolos Markdown com barras invertidas (não escreva \\*\\*, \\# ou \\-). Evite um bloco único de texto. Use uma linha em branco entre título, explicação, etapas e conclusão."
           ].join("\n");
           const userContent = [{ type: "text", text: question || "Analise os prints enviados e me ajude a entender e resolver a questão matemática." }, ...images.map((image) => ({ type: "image_url", image_url: { url: image as string } }))];
           const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

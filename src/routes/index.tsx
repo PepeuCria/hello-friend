@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ArrowRight, BookOpen, Brain, Check, ChevronDown, CircleHelp, GraduationCap, Lightbulb, MessageCircle, RefreshCw, Sparkles, Target, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Index });
@@ -29,6 +29,11 @@ function PixelMark() {
 function Index() {
   const [grade, setGrade] = useState("9º ano");
   const [topic, setTopic] = useState("Equação do 2º grau");
+  const [generatedExercises, setGeneratedExercises] = useState<{question:string; options:string[]; answerIndex:number; explanation:string; steps:string[]}[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState("");
+  const [exerciseAnswers, setExerciseAnswers] = useState<Record<number, number>>({});
+  const [revealedExercises, setRevealedExercises] = useState<Record<number, boolean>>({});
   const [difficulty, setDifficulty] = useState("No meu ritmo");
   const [mode, setMode] = useState<"practice" | "doubt" | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -36,17 +41,29 @@ function Index() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [doubt, setDoubt] = useState("");
   const [chat, setChat] = useState<{from: string; text: string}[]>([]);
-  const topics = useMemo(() => topicsByGrade[grade] ?? topicsByGrade["9º ano"], [grade]);
   const question = questions[questionIndex % questions.length];
 
   function chooseGrade(value: string) {
     setGrade(value);
-    setTopic((topicsByGrade[value] ?? topicsByGrade["9º ano"])[0]);
+    setGeneratedExercises([]);
+    setGenerationError("");
   }
   function nextQuestion() {
     setQuestionIndex((n) => n + 1);
     setSelected(null);
     setShowExplanation(false);
+  }
+  async function generateExercises() {
+    if (!topic.trim()) { setGenerationError("Escreva a matéria ou o assunto que quer estudar."); setMode("practice"); return; }
+    setMode("practice"); setIsGenerating(true); setGenerationError(""); setGeneratedExercises([]); setExerciseAnswers({}); setRevealedExercises({});
+    try {
+      const response = await fetch("/api/generate-exercises", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ grade, topic: topic.trim(), difficulty }) });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível gerar os exercícios agora.");
+      setGeneratedExercises(payload.exercises);
+    } catch (error) {
+      setGenerationError(error instanceof Error ? error.message : "Erro ao gerar exercícios. Tente novamente.");
+    } finally { setIsGenerating(false); }
   }
   function sendDoubt() {
     const text = doubt.trim();
@@ -107,10 +124,10 @@ function Index() {
         <div className="start-heading"><div className="eyebrow"><span className="eyebrow-dot" /> SUA PRÓXIMA DESCOBERTA</div><h2>Tá, vamos de<br /><span>matemática?</span></h2><p>Escolha um caminho e a gente começa.</p></div>
         <div className="start-panel">
           <div className="panel-head"><div className="panel-icon"><GraduationCap size={21} /></div><div><h3>Monte seu momento de estudo</h3><p>Do seu jeito, no seu tempo.</p></div><span className="panel-step">01 — 02</span></div>
-          <div className="field-grid"><label className="field-label">QUAL É O SEU ANO?<span className="select-wrap"><select value={grade} onChange={(e) => chooseGrade(e.target.value)}>{grades.map((g) => <option key={g}>{g}</option>)}</select><ChevronDown size={17} /></span></label><label className="field-label">O QUE VAMOS ESTUDAR?<span className="select-wrap"><select value={topic} onChange={(e) => setTopic(e.target.value)}>{topics.map((t) => <option key={t}>{t}</option>)}</select><ChevronDown size={17} /></span></label></div>
+          <div className="field-grid"><label className="field-label">QUAL É O SEU ANO?<span className="select-wrap"><select value={grade} onChange={(e) => chooseGrade(e.target.value)}>{grades.map((g) => <option key={g}>{g}</option>)}</select><ChevronDown size={17} /></span></label><label className="field-label">QUAL MATÉRIA OU ASSUNTO?<span className="topic-input-wrap"><input className="topic-input" value={topic} onChange={(e) => { setTopic(e.target.value); setGeneratedExercises([]); }} placeholder="Ex.: equação do 2º grau, frações..." /><small>Escreva com suas palavras. A IA interpreta o tema.</small></span></label></div>
           <div className="difficulty-row"><span className="field-label">QUAL É O CLIMA DE HOJE?</span><div className="difficulty-options">{["Quero o básico", "No meu ritmo", "Pode desafiar"].map((d) => <button key={d} className={difficulty === d ? "difficulty-option active" : "difficulty-option"} onClick={() => setDifficulty(d)}>{d === "Quero o básico" ? "🌱" : d === "No meu ritmo" ? "🌿" : "🚀"} {d}</button>)}</div></div>
-          <div className="mode-actions"><button className="mode-button primary-mode" onClick={() => { setMode("practice"); setSelected(null); setShowExplanation(false); }}><span className="mode-symbol"><Target size={19} /></span><span><strong>Quero praticar</strong><small>Exercícios sobre {topic.toLowerCase()}</small></span><ArrowRight size={18} /></button><button className="mode-button" onClick={() => setMode("doubt")}><span className="mode-symbol question-symbol"><CircleHelp size={19} /></span><span><strong>Tenho uma dúvida</strong><small>Vamos pensar juntos</small></span><ArrowRight size={18} /></button></div>
-          {mode === "practice" && <div className="demo-panel"><div className="demo-top"><span className="demo-tag">EXERCÍCIO DEMONSTRATIVO</span><button className="close-demo" onClick={() => setMode(null)} aria-label="Fechar"><X size={17} /></button></div><p className="demo-meta">{grade} · {topic} · {difficulty}</p><h3>{question.q}</h3><div className="answer-options">{question.options.map((option, i) => <button key={option} onClick={() => { setSelected(i); setShowExplanation(false); }} className={selected === i ? "answer-option selected" : "answer-option"}><span>{String.fromCharCode(65 + i)}</span>{option}{showExplanation && i === question.answer && <Check size={17} />}</button>)}</div>{selected !== null && <div className={showExplanation ? (selected === question.answer ? "feedback correct" : "feedback incorrect") : "feedback"}>{showExplanation ? <><strong>{selected === question.answer ? "Boa! Você acertou." : "Quase! Vamos entender."}</strong><p>{question.explanation}</p><small>Questões exibidas aqui são exemplos locais. A geração por IA será conectada ao backend.</small><button onClick={nextQuestion}>Próxima questão <ArrowRight size={15} /></button></> : <button onClick={() => setShowExplanation(true)}>Conferir resposta <ArrowRight size={15} /></button>}</div>}</div>}
+          <div className="mode-actions"><button className="mode-button primary-mode" onClick={generateExercises}><span className="mode-symbol"><Target size={19} /></span><span><strong>Quero praticar</strong><small>A IA cria exercícios para o seu ano</small></span><ArrowRight size={18} /></button><button className="mode-button" onClick={() => setMode("doubt")}><span className="mode-symbol question-symbol"><CircleHelp size={19} /></span><span><strong>Tenho uma dúvida</strong><small>Vamos pensar juntos</small></span><ArrowRight size={18} /></button></div>
+          {mode === "practice" && <div className="demo-panel"><div className="demo-top"><span className="demo-tag">EXERCÍCIOS PERSONALIZADOS COM IA</span><button className="close-demo" onClick={() => setMode(null)} aria-label="Fechar"><X size={17} /></button></div><p className="demo-meta">{grade} · {topic} · {difficulty}</p>{isGenerating ? <div className="ai-loading"><Sparkles size={22} /><h3>Preparando seus exercícios...</h3><p>A IA está interpretando o assunto e adaptando a explicação ao seu ano escolar.</p></div> : generationError ? <div className="ai-error"><p>{generationError}</p><button className="ai-retry" onClick={generateExercises}>Tentar novamente <RefreshCw size={15} /></button></div> : generatedExercises.length > 0 ? <><p className="ai-intro">Criamos {generatedExercises.length} questões sobre <strong>{topic}</strong>, com linguagem e dificuldade adequadas ao {grade}.</p>{generatedExercises.map((exercise, index) => <article className="generated-exercise" key={index}><div className="exercise-count">QUESTÃO {index + 1} DE {generatedExercises.length}</div><h3>{exercise.question}</h3><div className="answer-options">{exercise.options.map((option, optionIndex) => <button key={optionIndex} onClick={() => setExerciseAnswers(prev => ({...prev, [index]: optionIndex}))} className={exerciseAnswers[index] === optionIndex ? "answer-option selected" : "answer-option"}><span>{String.fromCharCode(65 + optionIndex)}</span>{option}{revealedExercises[index] && optionIndex === exercise.answerIndex && <Check size={17} />}</button>)}</div>{exerciseAnswers[index] !== undefined && <button className="reveal-answer" onClick={() => setRevealedExercises(prev => ({...prev, [index]: true}))}>{revealedExercises[index] ? "Explicação exibida" : "Ver resposta e explicação"} <ArrowRight size={15} /></button>}{revealedExercises[index] && <div className={exerciseAnswers[index] === exercise.answerIndex ? "feedback correct" : "feedback incorrect"}><strong>{exerciseAnswers[index] === exercise.answerIndex ? "Boa! Você acertou." : "Vamos aprender com essa tentativa."}</strong><p><strong>Resposta:</strong> {exercise.options[exercise.answerIndex]}</p><p>{exercise.explanation}</p>{exercise.steps?.length > 0 && <ol>{exercise.steps.map((step, stepIndex) => <li key={stepIndex}>{step}</li>)}</ol>}</div>}</article>)}<button className="ai-retry" onClick={generateExercises}>Gerar novos exercícios <RefreshCw size={15} /></button></> : <p>Peça para gerar os exercícios para começar.</p>}</div>}
           {mode === "doubt" && <div className="demo-panel"><div className="demo-top"><span className="demo-tag">ESPAÇO DE DÚVIDAS</span><button className="close-demo" onClick={() => setMode(null)} aria-label="Fechar"><X size={17} /></button></div><h3>O que está pegando?</h3><p className="doubt-intro">Escreva sua dúvida ou cole o enunciado da questão. Este chat ainda está em modo demonstrativo.</p><div className="chat-history">{chat.map((item, i) => <div key={i} className={item.from === "you" ? "chat-bubble user-bubble" : "chat-bubble friend-bubble"}>{item.text}</div>)}</div><form className="doubt-form" onSubmit={(e) => { e.preventDefault(); sendDoubt(); }}><input value={doubt} onChange={(e) => setDoubt(e.target.value)} placeholder="Ex.: como resolvo 2x + 4 = 10?" /><button type="submit" aria-label="Enviar dúvida"><ArrowRight size={18} /></button></form></div>}
           <p className="panel-footnote"><Lightbulb size={15} /> Sem pressão: você pode mudar de ideia quando quiser.</p>
         </div>
@@ -118,7 +135,7 @@ function Index() {
 
       <section className="topics-section section-pad" id="conteudos"><div className="topics-head"><div><div className="eyebrow">UM UNIVERSO DE IDEIAS</div><h2>Tem matemática<br /><span>pra todo mundo.</span></h2></div><p>Do primeiro contato com frações aos desafios do ENEM, seu próximo passo começa aqui.</p></div><div className="topic-chips">{["➗ Operações", "½ Frações", "x Equações", "△ Geometria", "% Porcentagem", "π Funções", "↗ Estatística", "√ Raízes"].map((t) => <span key={t}>{t}</span>)}</div><div className="topics-bottom"><span>4º ANO — 3º ANO DO ENSINO MÉDIO</span><span>APRENDER É UM CAMINHO <span className="pixel-heart">♥</span></span></div></section>
 
-      <footer className="footer"><a className="brand" href="#inicio"><PixelMark /><span>hello friend<span className="brand-dot">.</span></span></a><p>Feito pra aprender junto. <span>✳</span></p><a href="#inicio" className="back-top">Voltar ao topo ↑</a></footer>
+      <footer className="footer"><a className="brand" href="#inicio"><img src="/xplica-logo.svg" alt="Xplica" /></a><p>Feito pra aprender junto. <span>✳</span></p><a href="#inicio" className="back-top">Voltar ao topo ↑</a></footer>
     </main>
   );
 }

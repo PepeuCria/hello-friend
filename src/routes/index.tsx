@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowRight, BookOpen, Check, ChevronDown, CircleHelp, GraduationCap, Lightbulb, MessageCircle, RefreshCw, Sparkles, Target, X } from "lucide-react";
+import { useState, useRef, type ClipboardEvent, type ChangeEvent } from "react";
+import { ArrowRight, BookOpen, Check, ChevronDown, CircleHelp, GraduationCap, ImagePlus, Lightbulb, MessageCircle, RefreshCw, Sparkles, Target, Upload, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Index });
 
@@ -20,6 +20,35 @@ function Index() {
   const [mode, setMode] = useState<"practice" | "doubt" | null>(null);
   const [doubt, setDoubt] = useState("");
   const [chat, setChat] = useState<{from: string; text: string}[]>([]);
+  const [screenshots, setScreenshots] = useState<{name: string; dataUrl: string}[]>([]);
+  const [isSendingDoubt, setIsSendingDoubt] = useState(false);
+  const [doubtError, setDoubtError] = useState("");
+  const screenshotInput = useRef<HTMLInputElement>(null);
+  async function addScreenshotFiles(fileList: FileList | File[]) {
+    const files = Array.from(fileList).filter((file) => file.type.startsWith("image/"));
+    const remaining = Math.max(0, 3 - screenshots.length);
+    if (files.length > remaining) setGenerationError("Você pode adicionar no máximo 3 prints.");
+    const accepted = files.slice(0, remaining);
+    const loaded = await Promise.all(accepted.map((file) => new Promise<{name:string;dataUrl:string}|null>((resolve) => {
+      if (file.size > 5 * 1024 * 1024) { resolve(null); return; }
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? {name:file.name || "print",dataUrl:reader.result} : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    })));
+    const valid = loaded.filter((item): item is {name:string;dataUrl:string} => item !== null);
+    setScreenshots((current) => [...current, ...valid].slice(0,3));
+    if (valid.length < accepted.length) setGenerationError("Algum print passou de 5 MB ou não pôde ser lido. Use imagens menores.");
+    else setGenerationError("");
+  }
+  function handleScreenshotPaste(event: ClipboardEvent<HTMLElement>) {
+    const files = Array.from(event.clipboardData.items).filter((item)=>item.type.startsWith("image/")).map((item)=>item.getAsFile()).filter((file):file is File=>file!==null);
+    if(files.length){event.preventDefault();void addScreenshotFiles(files);}
+  }
+  function handleScreenshotSelect(event: ChangeEvent<HTMLInputElement>) {
+    if(event.target.files) void addScreenshotFiles(event.target.files);
+    event.target.value="";
+  }
 
   function chooseGrade(value: string) {
     setGrade(value);
@@ -30,7 +59,7 @@ function Index() {
     if (!topic.trim()) { setGenerationError("Escreva a matéria ou o assunto que quer estudar."); setMode("practice"); return; }
     setMode("practice"); setIsGenerating(true); setGenerationError(""); setGeneratedExercises([]); setExerciseAnswers({}); setRevealedExercises({});
     try {
-      const response = await fetch("/api/generate-exercises", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ grade, topic: topic.trim(), difficulty }) });
+      const response = await fetch("/api/generate-exercises", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ grade, topic: topic.trim(), difficulty, images: screenshots.map((item) => item.dataUrl) }) });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Não foi possível gerar os exercícios agora.");
       setGeneratedExercises(payload.exercises);
@@ -38,11 +67,18 @@ function Index() {
       setGenerationError(error instanceof Error ? error.message : "Erro ao gerar exercícios. Tente novamente.");
     } finally { setIsGenerating(false); }
   }
-  function sendDoubt() {
-    const text = doubt.trim();
-    if (!text) return;
-    setChat((items) => [...items, { from: "you", text }, { from: "friend", text: "Boa pergunta! Para resolver, vamos por partes: identifique o que o exercício está pedindo, separe os dados importantes e escolha a regra matemática que conecta essas informações. Se você enviar o enunciado completo, posso ajudar a analisar cada etapa. (Esta é uma resposta demonstrativa; a IA ainda precisa ser conectada.)" }]);
-    setDoubt("");
+  async function sendDoubt() {
+    const text=doubt.trim();
+    if((!text && screenshots.length===0)||isSendingDoubt)return;
+    setChat(items=>[...items,{from:"you",text:text||"Pode me explicar a questão dos prints?"}]);
+    setDoubt("");setDoubtError("");setIsSendingDoubt(true);
+    try {
+      const response=await fetch("/api/ask-doubt",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({grade,question:text,images:screenshots.map(item=>item.dataUrl)})});
+      const payload=await response.json();
+      if(!response.ok)throw new Error(payload.error||"Não foi possível responder agora.");
+      setChat(items=>[...items,{from:"friend",text:payload.answer}]);
+    } catch(error) {setDoubtError(error instanceof Error?error.message:"Erro ao enviar a dúvida. Tente novamente.");}
+    finally {setIsSendingDoubt(false);}
   }
 
   return (
@@ -95,13 +131,13 @@ function Index() {
 
       <section className="start-section section-pad" id="comecar">
         <div className="start-heading"><div className="eyebrow"><span className="eyebrow-dot" /> SUA PRÓXIMA DESCOBERTA</div><h2>Tá, vamos de<br /><span>matemática?</span></h2><p>Escolha um caminho e a gente começa.</p></div>
-        <div className="start-panel">
+        <div className="start-panel" onPaste={handleScreenshotPaste}>
           <div className="panel-head"><div className="panel-icon"><GraduationCap size={21} /></div><div><h3>Monte seu momento de estudo</h3><p>Do seu jeito, no seu tempo.</p></div><span className="panel-step">01 — 02</span></div>
           <div className="field-grid"><label className="field-label">QUAL É O SEU ANO?<span className="select-wrap"><select value={grade} onChange={(e) => chooseGrade(e.target.value)}>{grades.map((g) => <option key={g}>{g}</option>)}</select><ChevronDown size={17} /></span></label><label className="field-label">QUAL MATÉRIA OU ASSUNTO?<span className="topic-input-wrap"><input className="topic-input" value={topic} onChange={(e) => { setTopic(e.target.value); setGeneratedExercises([]); }} placeholder="Ex.: equação do 2º grau, frações..." /><small>Escreva com suas palavras. A IA interpreta o tema.</small></span></label></div>
-          <div className="difficulty-row"><span className="field-label">QUAL É O CLIMA DE HOJE?</span><div className="difficulty-options">{["Quero o básico", "No meu ritmo", "Pode desafiar"].map((d) => <button key={d} className={difficulty === d ? "difficulty-option active" : "difficulty-option"} onClick={() => setDifficulty(d)}>{d === "Quero o básico" ? "🌱" : d === "No meu ritmo" ? "🌿" : "🚀"} {d}</button>)}</div></div>
+          <div className="screenshot-area"><div className="screenshot-heading"><ImagePlus size={18}/><div><strong>Tem uma questão em print?</strong><small>Cole com Ctrl+V ou selecione até 3 imagens (PNG, JPG ou WEBP, até 5 MB cada).</small></div></div><input ref={screenshotInput} className="screenshot-file-input" type="file" accept="image/*" multiple onChange={handleScreenshotSelect}/><button type="button" className="screenshot-add" onClick={()=>screenshotInput.current?.click()} disabled={screenshots.length>=3}><Upload size={15}/> Adicionar prints ({screenshots.length}/3)</button>{screenshots.length>0&&<div className="screenshot-list">{screenshots.map((item,i)=><div className="screenshot-thumb" key={item.dataUrl}><img src={item.dataUrl} alt={item.name}/><span>Print {i+1}</span><button type="button" onClick={()=>setScreenshots(current=>current.filter((_,j)=>j!==i))} aria-label={`Remover print ${i+1}`}><X size={14}/></button></div>)}</div>}{generationError&&!isGenerating&&<p className="screenshot-error">{generationError}</p>}</div><div className="difficulty-row"><span className="field-label">QUAL É O CLIMA DE HOJE?</span><div className="difficulty-options">{["Quero o básico", "No meu ritmo", "Pode desafiar"].map((d) => <button key={d} className={difficulty === d ? "difficulty-option active" : "difficulty-option"} onClick={() => setDifficulty(d)}>{d === "Quero o básico" ? "🌱" : d === "No meu ritmo" ? "🌿" : "🚀"} {d}</button>)}</div></div>
           <div className="mode-actions"><button className="mode-button primary-mode" onClick={generateExercises}><span className="mode-symbol"><Target size={19} /></span><span><strong>Quero praticar</strong><small>A IA cria exercícios para o seu ano</small></span><ArrowRight size={18} /></button><button className="mode-button" onClick={() => setMode("doubt")}><span className="mode-symbol question-symbol"><CircleHelp size={19} /></span><span><strong>Tenho uma dúvida</strong><small>Vamos pensar juntos</small></span><ArrowRight size={18} /></button></div>
           {mode === "practice" && <div className="demo-panel"><div className="demo-top"><span className="demo-tag">EXERCÍCIOS PERSONALIZADOS COM IA</span><button className="close-demo" onClick={() => setMode(null)} aria-label="Fechar"><X size={17} /></button></div><p className="demo-meta">{grade} · {topic} · {difficulty}</p>{isGenerating ? <div className="ai-loading"><Sparkles size={22} /><h3>Preparando seus exercícios...</h3><p>A IA está interpretando o assunto e adaptando a explicação ao seu ano escolar.</p></div> : generationError ? <div className="ai-error"><p>{generationError}</p><button className="ai-retry" onClick={generateExercises}>Tentar novamente <RefreshCw size={15} /></button></div> : generatedExercises.length > 0 ? <><p className="ai-intro">Criamos {generatedExercises.length} questões sobre <strong>{topic}</strong>, com linguagem e dificuldade adequadas ao {grade}.</p>{generatedExercises.map((exercise, index) => <article className="generated-exercise" key={index}><div className="exercise-count">QUESTÃO {index + 1} DE {generatedExercises.length}</div><h3>{exercise.question}</h3><div className="answer-options">{exercise.options.map((option, optionIndex) => <button key={optionIndex} onClick={() => setExerciseAnswers(prev => ({...prev, [index]: optionIndex}))} className={exerciseAnswers[index] === optionIndex ? "answer-option selected" : "answer-option"}><span>{String.fromCharCode(65 + optionIndex)}</span>{option}{revealedExercises[index] && optionIndex === exercise.answerIndex && <Check size={17} />}</button>)}</div>{exerciseAnswers[index] !== undefined && <button className="reveal-answer" onClick={() => setRevealedExercises(prev => ({...prev, [index]: true}))}>{revealedExercises[index] ? "Explicação exibida" : "Ver resposta e explicação"} <ArrowRight size={15} /></button>}{revealedExercises[index] && <div className={exerciseAnswers[index] === exercise.answerIndex ? "feedback correct" : "feedback incorrect"}><strong>{exerciseAnswers[index] === exercise.answerIndex ? "Boa! Você acertou." : "Vamos aprender com essa tentativa."}</strong><p><strong>Resposta:</strong> {exercise.options[exercise.answerIndex]}</p><p>{exercise.explanation}</p>{exercise.steps?.length > 0 && <ol>{exercise.steps.map((step, stepIndex) => <li key={stepIndex}>{step}</li>)}</ol>}</div>}</article>)}<button className="ai-retry" onClick={generateExercises}>Gerar novos exercícios <RefreshCw size={15} /></button></> : <p>Peça para gerar os exercícios para começar.</p>}</div>}
-          {mode === "doubt" && <div className="demo-panel"><div className="demo-top"><span className="demo-tag">ESPAÇO DE DÚVIDAS</span><button className="close-demo" onClick={() => setMode(null)} aria-label="Fechar"><X size={17} /></button></div><h3>O que está pegando?</h3><p className="doubt-intro">Escreva sua dúvida ou cole o enunciado da questão. Este chat ainda está em modo demonstrativo.</p><div className="chat-history">{chat.map((item, i) => <div key={i} className={item.from === "you" ? "chat-bubble user-bubble" : "chat-bubble friend-bubble"}>{item.text}</div>)}</div><form className="doubt-form" onSubmit={(e) => { e.preventDefault(); sendDoubt(); }}><input value={doubt} onChange={(e) => setDoubt(e.target.value)} placeholder="Ex.: como resolvo 2x + 4 = 10?" /><button type="submit" aria-label="Enviar dúvida"><ArrowRight size={18} /></button></form></div>}
+          {mode === "doubt" && <div className="demo-panel"><div className="demo-top"><span className="demo-tag">ESPAÇO DE DÚVIDAS</span><button className="close-demo" onClick={() => setMode(null)} aria-label="Fechar"><X size={17} /></button></div><h3>O que está pegando?</h3><p className="doubt-intro">Escreva sua dúvida ou envie prints da questão. Você pode colar imagens com Ctrl+V na área de estudo ou usar o botão acima.</p><div className="chat-history">{chat.map((item, i) => <div key={i} className={item.from === "you" ? "chat-bubble user-bubble" : "chat-bubble friend-bubble"}>{item.text}</div>)}</div>{doubtError&&<p className="screenshot-error">{doubtError}</p>}{isSendingDoubt&&<p className="ai-loading">Analisando sua dúvida e os prints...</p>}<form className="doubt-form" onSubmit={e=>{e.preventDefault();void sendDoubt();}}><input value={doubt} onChange={e=>setDoubt(e.target.value)} placeholder="Escreva sua dúvida..."/><button type="submit" aria-label="Enviar dúvida" disabled={isSendingDoubt||(!doubt.trim()&&screenshots.length===0)}><ArrowRight size={18}/></button></form></div>}
           <p className="panel-footnote"><Lightbulb size={15} /> Sem pressão: você pode mudar de ideia quando quiser.</p>
         </div>
       </section>

@@ -20,7 +20,6 @@ function Index() {
   const [mode, setMode] = useState<"practice" | "doubt" | null>(null);
   const [doubt, setDoubt] = useState("");
   const [chat, setChat] = useState<{from: string; text: string}[]>([]);
-  const question = questions[questionIndex % questions.length];
 
   function chooseGrade(value: string) {
     setGrade(value);

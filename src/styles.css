@@ -18,3 +18,30 @@
 
 /* Accessible math rendering for generated exercises and AI explanations */
 .math-text{font-size:inherit;line-height:1.8;overflow-wrap:anywhere;min-width:0}.math-text .math-display{display:block;max-width:100%;overflow-x:auto;overflow-y:hidden;padding:9px 4px;margin:8px 0;text-align:center}.math-text .math-inline{display:inline}.exercise-question{font-size:15px;line-height:1.85;color:var(--ink);margin:13px 0 17px}.exercise-question .math-display{font-size:1.12em;background:#f7f6ee;border-radius:5px}.option-math{display:inline;line-height:1.7}.option-math .math-display{display:block;text-align:left}.feedback-math{margin:7px 0;line-height:1.8}.feedback-math .math-display,.chat-bubble .math-display{background:#ffffffa0;border-radius:4px}.math-text .katex{font-size:1.05em}.chat-bubble .math-text{font-size:12px;line-height:1.8}.generated-exercise .feedback li .math-text{display:inline}.generated-exercise .feedback li .math-display{display:block}
+
+
+/* Clean, ChatGPT-inspired conversation layout */
+.chat-history{display:flex;flex-direction:column;gap:18px;margin:22px 0 16px;padding:4px 0;background:transparent}
+.chat-bubble{font-size:14px;line-height:1.75;padding:0;max-width:100%;border-radius:0;overflow-wrap:anywhere;background:transparent;color:#292b27}
+.user-bubble{align-self:flex-end;justify-self:auto;max-width:min(88%,520px);padding:10px 15px;border-radius:18px 18px 5px 18px;background:#eeeee8;color:#292b27}
+.friend-bubble{align-self:stretch;justify-self:auto;width:100%;padding:0;background:transparent;color:#292b27}
+.chat-message{font-size:14px;line-height:1.8;overflow-wrap:anywhere}
+.chat-message p{margin:0 0 13px;line-height:1.8}
+.chat-message p:last-child{margin-bottom:0}
+.chat-message h3{font:700 17px/1.45 'Space Grotesk',sans-serif;letter-spacing:-.25px;margin:21px 0 10px;color:var(--ink)}
+.chat-message h4{font:700 15px/1.5 'Space Grotesk',sans-serif;margin:18px 0 8px;color:var(--ink)}
+.chat-message strong{font-weight:750;color:#20251f}
+.chat-message em{font-style:italic}
+.chat-message code{font:12px 'DM Mono',monospace;background:#f0f0eb;border-radius:4px;padding:2px 5px}
+.chat-message hr{border:0;border-top:1px solid #e6e6df;margin:19px 0}
+.chat-spacer{height:4px}
+.chat-list-item{display:grid;grid-template-columns:18px minmax(0,1fr);gap:4px;margin:6px 0 8px;padding-left:2px;line-height:1.8}
+.chat-list-item>span{color:#77796f}
+.chat-list-item.numbered>span{font-variant-numeric:tabular-nums}
+.chat-message .math-text{display:inline;line-height:inherit}
+.chat-message .math-display{display:block;text-align:center;overflow-x:auto;max-width:100%;padding:8px 0}
+.doubt-intro{line-height:1.75}
+.doubt-form{border-radius:18px;overflow:hidden;background:#fffdf6}
+.doubt-form input{font-size:13px;padding:14px}
+.doubt-form button{min-width:46px}
+@media(max-width:680px){.chat-history{gap:16px}.chat-bubble{font-size:13px}.chat-message{font-size:13px}.user-bubble{max-width:92%;padding:9px 13px}.chat-message h3{font-size:16px}}

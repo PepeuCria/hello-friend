@@ -16,8 +16,8 @@ export const Route = createFileRoute("/api/generate-exercises")({
           if (!topic) return Response.json({ error: "Escreva a matéria ou o assunto que deseja estudar." }, { status: 400 });
           if (!allowedDifficulties.has(difficulty)) return Response.json({ error: "Selecione um nível de dificuldade válido." }, { status: 400 });
 
-          const apiKey = process.env["OPENAI_API_KEY"];
-          if (!apiKey) return Response.json({ error: "A IA ainda não está ativada neste site. O administrador precisa configurar a chave OPENAI_API_KEY no ambiente do servidor." }, { status: 503 });
+          const apiKey = process.env["LOVABLE_API_KEY"];
+          if (!apiKey) return Response.json({ error: "A IA ainda não está ativada neste site. O administrador precisa ativar a IA do projeto." }, { status: 503 });
 
           const instructions = [
             "Você é um professor de matemática paciente e excelente em adaptar a explicação ao ano escolar brasileiro.",
@@ -33,11 +33,11 @@ export const Route = createFileRoute("/api/generate-exercises")({
             'Responda somente JSON válido neste formato: {"exercises":[{"question":"...","options":["...","...","...","..."],"answerIndex":0,"explanation":"...","steps":["...","..."]}],"error":null}'
           ].join("\n");
 
-          const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
             headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
             body: JSON.stringify({
-              model: process.env["OPENAI_MODEL"] || "gpt-4.1-mini",
+              model: "google/gemini-3-flash-preview",
               temperature: 0.6,
               response_format: { type: "json_object" },
               messages: [
@@ -48,8 +48,8 @@ export const Route = createFileRoute("/api/generate-exercises")({
           });
           if (!response.ok) {
             const details = await response.text();
-            console.error("OpenAI exercise generation failed", response.status, details.slice(0, 500));
-            return Response.json({ error: response.status === 429 ? "O limite de uso da IA foi atingido. Tente novamente mais tarde." : "Não foi possível gerar os exercícios agora. Tente novamente em instantes." }, { status: 502 });
+            console.error("AI exercise generation failed", response.status, details.slice(0, 500));
+            return Response.json({ error: response.status === 429 ? "Muitas pessoas usando agora. Tente novamente em instantes." : response.status === 402 ? "Os créditos de IA acabaram. O administrador precisa adicionar créditos." : "Não foi possível gerar os exercícios agora. Tente novamente em instantes." }, { status: 502 });
           }
           const data = await response.json() as { choices?: { message?: { content?: string } }[] };
           const content = data.choices?.[0]?.message?.content;

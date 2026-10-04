@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 150" role="img" aria-labelledby="title desc">
+  <title id="title">Xplica</title><desc id="desc">Logo Xplica com símbolo matemático x ao quadrado em um bloco verde pixelado.</desc>
+  <defs>
+    <style>
+      .word{font-family:'Courier New',monospace;font-weight:900;font-size:112px;letter-spacing:-7px;fill:#17263f}
+      .symbol{font-family:'Courier New',monospace;font-weight:900;fill:#17263f}
+    </style>
+  </defs>
+  <g shape-rendering="crispEdges">
+    <path d="M20 18H115V27H124V116H115V125H20V116H11V27H20Z" fill="#263b29"/>
+    <path d="M22 21H112V29H120V113H112V121H22V113H14V29H22Z" fill="#d9f36b"/>
+    <path d="M27 27H106V34H113V108H106V115H27V108H20V34H27Z" fill="#c9ef5a"/>
+    <path d="M29 30H37V38H29Z M98 30H106V38H98Z M29 104H37V112H29Z M98 104H106V112H98Z" fill="#eaff9a"/>
+  </g>
+  <text x="34" y="94" class="symbol" font-size="68">x</text>
+  <text x="78" y="57" class="symbol" font-size="35">2</text>
+  <text x="145" y="111" class="word">Xplica</text>
+  <rect x="331" y="22" width="9" height="9" fill="#d9f36b"/>
+</svg>

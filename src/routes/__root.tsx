@@ -49,10 +49,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Hello Friend — matemática do seu jeito" },
+      { title: "Xplica — matemática do seu jeito" },
       { name: "description", content: "Aprenda matemática no seu ritmo, pratique sem medo e tire suas dúvidas. Do 4º ano ao Ensino Médio." },
-      { name: "author", content: "Hello Friend" },
-      { property: "og:title", content: "Hello Friend — matemática do seu jeito" },
+      { name: "author", content: "Xplica" },
+      { property: "og:title", content: "Xplica — matemática do seu jeito" },
       { property: "og:description", content: "Aprenda no seu ritmo. Um passo de cada vez." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

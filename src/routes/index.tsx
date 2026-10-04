@@ -1,30 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRight, BookOpen, Brain, Check, ChevronDown, CircleHelp, GraduationCap, Lightbulb, MessageCircle, RefreshCw, Sparkles, Target, X } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ChevronDown, CircleHelp, GraduationCap, Lightbulb, MessageCircle, RefreshCw, Sparkles, Target, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Index });
 
 const grades = ["4º ano", "5º ano", "6º ano", "7º ano", "8º ano", "9º ano", "1º ano EM", "2º ano EM", "3º ano EM"];
-const topicsByGrade: Record<string, string[]> = {
-  "4º ano": ["As quatro operações", "Frações", "Medidas", "Geometria básica"],
-  "5º ano": ["Frações e decimais", "Múltiplos e divisores", "Área e perímetro", "Porcentagem"],
-  "6º ano": ["Números inteiros", "Frações", "Expressões numéricas", "Ângulos e polígonos"],
-  "7º ano": ["Números racionais", "Equações do 1º grau", "Razão e proporção", "Porcentagem"],
-  "8º ano": ["Potenciação e raízes", "Sistemas de equações", "Produtos notáveis", "Geometria"],
-  "9º ano": ["Equação do 2º grau", "Teorema de Pitágoras", "Semelhança de triângulos", "Funções"],
-  "1º ano EM": ["Funções", "Progressões", "Trigonometria", "Geometria analítica"],
-  "2º ano EM": ["Logaritmos", "Análise combinatória", "Probabilidade", "Geometria espacial"],
-  "3º ano EM": ["Matemática financeira", "Estatística", "Probabilidade", "Revisão ENEM"],
-};
-const questions = [
-  { q: "Quanto vale 3x + 5 = 20?", options: ["x = 3", "x = 5", "x = 8", "x = 15"], answer: 1, explanation: "Subtraia 5 dos dois lados: 3x = 15. Depois divida por 3. Então, x = 5." },
-  { q: "Qual é a raiz quadrada de 144?", options: ["10", "11", "12", "14"], answer: 2, explanation: "Como 12 × 12 = 144, a raiz quadrada de 144 é 12." },
-  { q: "Um triângulo tem ângulos de 50° e 60°. Qual é o terceiro?", options: ["60°", "70°", "80°", "90°"], answer: 1, explanation: "A soma dos ângulos internos é 180°. Então 180° − 50° − 60° = 70°." },
-];
 
-function PixelMark() {
-  return <span className="pixel-mark" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /><i /><i /></span>;
-}
+
 
 function Index() {
   const [grade, setGrade] = useState("9º ano");
@@ -36,9 +18,6 @@ function Index() {
   const [revealedExercises, setRevealedExercises] = useState<Record<number, boolean>>({});
   const [difficulty, setDifficulty] = useState("No meu ritmo");
   const [mode, setMode] = useState<"practice" | "doubt" | null>(null);
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [showExplanation, setShowExplanation] = useState(false);
   const [doubt, setDoubt] = useState("");
   const [chat, setChat] = useState<{from: string; text: string}[]>([]);
   const question = questions[questionIndex % questions.length];
@@ -47,11 +26,6 @@ function Index() {
     setGrade(value);
     setGeneratedExercises([]);
     setGenerationError("");
-  }
-  function nextQuestion() {
-    setQuestionIndex((n) => n + 1);
-    setSelected(null);
-    setShowExplanation(false);
   }
   async function generateExercises() {
     if (!topic.trim()) { setGenerationError("Escreva a matéria ou o assunto que quer estudar."); setMode("practice"); return; }

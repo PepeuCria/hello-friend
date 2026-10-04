@@ -58,7 +58,7 @@ function Index() {
   return (
     <main className="site-shell">
       <header className="topbar">
-        <a className="brand" href="#inicio" aria-label="Hello Friend, início"><PixelMark /><span>hello friend<span className="brand-dot">.</span></span></a>
+        <a className="brand" href="#inicio" aria-label="Xplica, início"><img src="/xplica-logo.svg" alt="Xplica — matemática do seu jeito" /></a>
         <nav className="desktop-nav"><a href="#como-funciona">Como funciona</a><a href="#experiencias">O que você pode fazer</a><a href="#conteudos">Conteúdos</a></nav>
         <a className="top-cta" href="#comecar">Bora estudar <ArrowRight size={16} /></a>
       </header>

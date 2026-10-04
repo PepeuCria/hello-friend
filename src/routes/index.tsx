@@ -60,11 +60,7 @@ function MathText({ text, className = "" }: { text: string; className?: string }
 
 
 function ChatMessage({ text }: { text: string }) {
-  const normalized = text
-    .replace(/\\r\\n?/g, "\n")
-    .replace(/\\\\([*#_~`>-])/g, "$1")
-    .replace(/\\\\n/g, "\n")
-    .trim();
+  const normalized = text.split("\\n").join("\n").replaceAll("\\*", "*").replaceAll("\\#", "#").replaceAll("\\-", "-").replaceAll("\\_", "_").trim();
   const lines = normalized.split("\n");
   const inline = (value: string) => value.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g).map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) return <strong key={i}>{part.slice(2, -2)}</strong>;

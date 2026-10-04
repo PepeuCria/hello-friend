@@ -29,11 +29,13 @@ export const Route = createFileRoute("/api/generate-exercises")({
     handlers: {
       POST: async ({ request }) => {
         try {
-          const body = await request.json() as { grade?: string; topic?: string; difficulty?: string };
+          const body = await request.json() as { grade?: string; topic?: string; difficulty?: string; images?: unknown };
           const grade = typeof body.grade === "string" ? body.grade : "";
           const topic = typeof body.topic === "string" ? body.topic.trim().slice(0, 180) : "";
           const difficulty = typeof body.difficulty === "string" ? body.difficulty : "No meu ritmo";
 
+          const images = Array.isArray(body.images) ? body.images : [];
+          if (images.length > 3 || images.some((image) => typeof image !== "string" || !/^data:image\/(png|jpeg|webp|gif);base64,/.test(image) || image.length > 7_000_000)) return Response.json({ error: "Envie até 3 imagens PNG, JPG, WEBP ou GIF, de até 5 MB cada." }, { status: 400 });
           if (!allowedGrades.has(grade)) return Response.json({ error: "Selecione um ano escolar válido." }, { status: 400 });
           if (!topic) return Response.json({ error: "Escreva a matéria ou o assunto que deseja estudar." }, { status: 400 });
           if (!allowedDifficulties.has(difficulty)) return Response.json({ error: "Selecione um nível de dificuldade válido." }, { status: 400 });
@@ -51,7 +53,7 @@ export const Route = createFileRoute("/api/generate-exercises")({
           const instructions = [
             "Você é um especialista em ensino de matemática brasileira, elaboração de avaliações e resolução rigorosa de problemas.",
             "TAREFA: produzir exatamente 5 questões matemáticas originais, com múltipla escolha, gabarito e resolução verificável. Crie problemas novos; não reproduza nem parafraseie questões conhecidas, olimpíadas ou materiais protegidos.",
-            "CONTEXTO DO ALUNO: ano escolar " + grade + "; assunto solicitado: " + topic + "; nível escolhido: " + difficulty + ".",
+            "CONTEXTO DO ALUNO: ano escolar " + grade + "; assunto solicitado: " + topic + "; nível escolhido: " + difficulty + ". Se houver imagens, leia enunciados e diagramas para identificar temas e raciocínios; crie questões originais, sem copiar nem apenas trocar números dos exercícios fotografados.",
             "NÍVEL DE DIFICULDADE: " + difficultyGuidance[difficulty],
             "ALINHAMENTO CURRICULAR: respeite conhecimentos normalmente disponíveis no ano informado. Para 4º–5º anos, priorize sentido numérico, operações, frações, medidas e problemas concretos. Para 6º–7º, inclua divisibilidade, frações, razão, porcentagem, geometria e padrões adequados. Para 8º–9º, use álgebra, equações, proporcionalidade, funções introdutórias, geometria e probabilidade conforme o assunto. No Ensino Médio, use álgebra, funções, geometria, trigonometria, estatística, probabilidade, combinatória e teoria dos números quando relevantes.",
             "RACIOCÍNIO E VARIEDADE: as cinco questões devem testar aspectos diferentes do tópico sempre que possível. Misture cálculo, interpretação, aplicação e raciocínio conceitual. Em questões desafiadoras, procure uma sacada matemática legítima ou uma conexão entre ideias; não torne difícil apenas usando contas longas.",
@@ -71,7 +73,7 @@ export const Route = createFileRoute("/api/generate-exercises")({
               response_format: { type: "json_object" },
               messages: [
                 { role: "system", content: instructions },
-                { role: "user", content: "Gere as cinco questões agora. Faça uma revisão matemática independente de cada questão e do gabarito antes de devolver o JSON." }
+                { role: "user", content: [{ type: "text", text: "Gere as cinco questões agora. Use os prints como referência temática quando houver. Revise matematicamente cada questão e gabarito." }, ...images.map((image) => ({ type: "image_url", image_url: { url: image as string } }))] }
               ]
             })
           });

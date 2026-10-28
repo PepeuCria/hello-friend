@@ -32,7 +32,6 @@ function PreDiveGuide() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [passed, setPassed] = useState(false);
-  const [name, setName] = useState("");
   const quizQuestions = useMemo(() => questions, []);
 
   function markRead(i: number) { setRead((current) => current.includes(i) ? current : [...current, i]); }

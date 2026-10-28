@@ -1,88 +1,220 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, Check, ChevronRight, CircleCheck, Compass, Leaf, LockKeyhole, Waves } from "lucide-react";
+import { useState, useRef, useEffect, type ClipboardEvent, type ChangeEvent } from "react";
+import { ArrowRight, BookOpen, Check, ChevronDown, CircleHelp, GraduationCap, ImagePlus, Lightbulb, MessageCircle, RefreshCw, Sparkles, Target, Upload, X } from "lucide-react";
 
-export const Route = createFileRoute("/")({ component: PreDiveGuide });
+export const Route = createFileRoute("/")({ component: Index });
 
-const topics = [
-  { number: "01", tag: "VIDA MARINHA", title: "O equilíbrio da vida no oceano", summary: "Cada espécie tem um papel. Quando uma população diminui ou desaparece, todo o ecossistema pode sentir os efeitos.", detail: "Peixes, corais, algas e pequenos organismos formam uma rede de relações. Proteger a biodiversidade é proteger o equilíbrio que torna o mergulho possível.", icon: "◌" },
-  { number: "02", tag: "RESÍDUOS", title: "Plástico não pertence ao mar", summary: "Sacolas, embalagens e microplásticos podem ser confundidos com alimento e prejudicar animais marinhos.", detail: "O lixo pode permanecer no ambiente por muito tempo, ferir animais e se fragmentar em partículas difíceis de remover. O melhor resíduo é aquele que não chega à água.", icon: "⌁" },
-  { number: "03", tag: "RECIFES", title: "Recifes são vivos e frágeis", summary: "Corais podem ser danificados por contato, pisadas, equipamentos e sedimentos levantados sem cuidado.", detail: "Mantenha flutuabilidade neutra, observe sem tocar e tenha atenção à posição das nadadeiras. Um pequeno contato pode causar danos que levam muito tempo para se recuperar.", icon: "✳" },
-  { number: "04", tag: "POLUIÇÃO", title: "O que vai para a água não desaparece", summary: "Óleo, produtos químicos e esgoto podem degradar a qualidade da água e afetar a saúde dos ecossistemas.", detail: "A poluição pode reduzir a qualidade do habitat e afetar diferentes organismos. Respeitar as regras locais e evitar qualquer descarte é parte de uma prática responsável.", icon: "≈" },
-  { number: "05", tag: "CONDUTA", title: "Mergulhar sem deixar marcas", summary: "Alimentar animais, perseguir a vida marinha ou retirar objetos altera o ambiente e pode colocar seres vivos em risco.", detail: "Observe à distância, não alimente os animais e não retire nada do fundo. Siga as orientações do guia e mantenha uma atitude calma e consciente durante todo o mergulho.", icon: "◎" },
-];
+const grades = ["4º ano", "5º ano", "6º ano", "7º ano", "8º ano", "9º ano", "1º ano EM", "2º ano EM", "3º ano EM"];
 
-const questions = [
-  { q: "Por que a biodiversidade é importante para o oceano?", options: ["Porque todas as espécies fazem exatamente a mesma coisa", "Porque as espécies participam de uma rede de relações ecológicas", "Porque impede que o oceano tenha correntes", "Porque elimina a necessidade de conservação"], answer: 1, explanation: "As espécies estão conectadas e contribuem para o equilíbrio dos ecossistemas." },
-  { q: "Qual é uma consequência possível do plástico no mar?", options: ["Ele sempre se dissolve sem deixar resíduos", "Ele melhora a alimentação dos peixes", "Animais podem ingeri-lo ou ficar presos nele", "Ele transforma água salgada em água doce"], answer: 2, explanation: "Resíduos podem ser ingeridos ou causar ferimentos e emaranhamento." },
-  { q: "Qual atitude ajuda a proteger os recifes durante o mergulho?", options: ["Apoiar a mão no coral para tirar uma foto", "Manter boa flutuabilidade e não tocar", "Agitar as nadadeiras perto do fundo", "Levar um fragmento como lembrança"], answer: 1, explanation: "Boa flutuabilidade e distância segura reduzem o risco de danos físicos." },
-  { q: "Por que não devemos descartar óleo ou produtos químicos na água?", options: ["Porque podem contaminar a água e afetar organismos", "Porque deixam a água mais transparente", "Porque só afetam objetos sem vida", "Porque desaparecem instantaneamente"], answer: 0, explanation: "Poluentes podem comprometer a qualidade da água e os habitats." },
-  { q: "Qual comportamento é mais responsável ao encontrar um animal marinho?", options: ["Persegui-lo para conseguir uma foto", "Oferecer alimento para atraí-lo", "Observar à distância sem interferir", "Tocá-lo para verificar se está saudável"], answer: 2, explanation: "Observar sem perseguir, tocar ou alimentar reduz o estresse e a interferência." },
-  { q: "O que fazer se sua nadadeira estiver muito perto de um coral?", options: ["Bater mais forte para se afastar rápido", "Parar, recuperar o controle e ajustar a posição com cuidado", "Apoiar-se no coral para estabilizar", "Arrancar o coral que estiver no caminho"], answer: 1, explanation: "Movimentos controlados e boa flutuabilidade ajudam a evitar contato." },
-  { q: "Qual é a melhor forma de lidar com o próprio lixo antes de um passeio?", options: ["Deixá-lo no barco para alguém encontrar no mar", "Enterrá-lo na areia", "Guardá-lo e descartá-lo corretamente em terra", "Jogá-lo longe da costa"], answer: 2, explanation: "Todo resíduo deve ser mantido sob controle e destinado corretamente." },
-  { q: "Por que não se deve alimentar animais marinhos?", options: ["Porque pode alterar seu comportamento e sua alimentação", "Porque todos os animais marinhos não precisam de energia", "Porque isso torna a água mais salgada", "Porque só é proibido à noite"], answer: 0, explanation: "Alimentar animais pode mudar comportamentos naturais e criar riscos." },
-  { q: "O que significa observar a vida marinha de forma responsável?", options: ["Chegar o mais perto possível a qualquer custo", "Retirar organismos para identificá-los em casa", "Respeitar a distância e não interferir no ambiente", "Usar o flash encostando nos animais"], answer: 2, explanation: "A observação responsável prioriza a segurança e a mínima interferência." },
-  { q: "Se perceber alguém danificando o ambiente, qual é a atitude mais adequada?", options: ["Imitar a pessoa para não ficar de fora", "Ignorar sempre, mesmo havendo risco", "Agir com segurança e avisar o guia ou responsável", "Discutir debaixo d'água sem sinalizar"], answer: 2, explanation: "Siga os procedimentos do grupo e comunique o guia de forma segura." },
-];
 
-function PreDiveGuide() {
-  const [stage, setStage] = useState<"intro" | "reading" | "quiz" | "result">("intro");
-  const [read, setRead] = useState<number[]>([]);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [passed, setPassed] = useState(false);
-  const quizQuestions = useMemo(() => questions, []);
 
-  function markRead(i: number) { setRead((current) => current.includes(i) ? current : [...current, i]); }
-  function startQuiz() { setAnswers({}); setQuestionIndex(0); setStage("quiz"); }
-  function finishQuiz() {
-    const total = quizQuestions.reduce((sum, q, i) => sum + (answers[i] === q.answer ? 1 : 0), 0);
-    setScore(total); setPassed(total >= 8); setStage("result");
+
+declare global {
+  interface Window { katex?: { renderToString: (math: string, options?: Record<string, unknown>) => string } }
+}
+
+function MathText({ text, className = "" }: { text: string; className?: string }) {
+  const [ready, setReady] = useState(() => typeof window !== "undefined" && !!window.katex);
+  useEffect(() => {
+    if (window.katex) { setReady(true); return; }
+    const existing = document.querySelector<HTMLScriptElement>('script[data-katex="true"]');
+    const script = existing ?? document.createElement("script");
+    const finish = () => setReady(!!window.katex);
+    if (!existing) {
+      script.src = "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js";
+      script.async = true;
+      script.dataset.katex = "true";
+      script.onload = finish;
+      document.head.appendChild(script);
+    } else {
+      script.addEventListener("load", finish, { once: true });
+    }
+    const css = document.querySelector('link[data-katex-css="true"]') ?? document.createElement("link");
+    if (!css.parentNode) {
+      css.rel = "stylesheet";
+      css.href = "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css";
+      css.dataset.katexCss = "true";
+      document.head.appendChild(css);
+    }
+    return () => { script.removeEventListener("load", finish); };
+  }, []);
+  const renderParts = () => {
+    const parts: { value: string; math: boolean; display: boolean }[] = [];
+    const pattern = /(\\\[[\s\S]*?\\\]|\$\$[\s\S]*?\$\$|\\\([\s\S]*?\\\)|\$[^$\n]+\$)/g;
+    let last = 0;
+    for (const match of text.matchAll(pattern)) {
+      const index = match.index ?? 0;
+      if (index > last) parts.push({ value: text.slice(last, index), math: false, display: false });
+      const raw = match[0];
+      const display = raw.startsWith("\\[") || raw.startsWith("$$");
+      const value = raw.startsWith("$") && !raw.startsWith("$$") ? raw.slice(1, -1) : raw.slice(2, -2);
+      parts.push({ value, math: true, display });
+      last = index + raw.length;
+    }
+    if (last < text.length || parts.length === 0) parts.push({ value: text.slice(last), math: false, display: false });
+    return parts;
+  };
+  if (!ready || !window.katex) return <span className={className}>{text}</span>;
+  return <div className={`math-text ${className}`}>{renderParts().map((part, i) => part.math ? <span key={i} className={part.display ? "math-display" : "math-inline"} dangerouslySetInnerHTML={{ __html: window.katex!.renderToString(part.value, { displayMode: part.display, throwOnError: false, strict: "ignore" }) }} /> : <span key={i}>{part.value}</span>)}</div>;
+}
+
+
+function ChatMessage({ text }: { text: string }) {
+  const normalized = text.split("\\n").join("\n").replaceAll("\\*", "*").replaceAll("\\#", "#").replaceAll("\\-", "-").replaceAll("\\_", "_").trim();
+  const lines = normalized.split("\n");
+  const inline = (value: string) => value.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g).map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) return <strong key={i}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith("*") && part.endsWith("*")) return <em key={i}>{part.slice(1, -1)}</em>;
+    if (part.startsWith("`") && part.endsWith("`")) return <code key={i}>{part.slice(1, -1)}</code>;
+    return <MathText key={i} text={part} />;
+  });
+  return <div className="chat-message">{lines.map((line, i) => {
+    const trimmed = line.trim();
+    if (!trimmed) return <div className="chat-spacer" key={i} />;
+    if (/^---+$/.test(trimmed)) return <hr key={i} />;
+    if (/^#{1,3}\s+/.test(trimmed)) return <h3 key={i}>{inline(trimmed.replace(/^#{1,3}\s+/, ""))}</h3>;
+    if (/^[-*•]\s+/.test(trimmed)) return <div className="chat-list-item" key={i}><span>•</span><div>{inline(trimmed.replace(/^[-*•]\s+/, ""))}</div></div>;
+    if (/^\d+[.)]\s+/.test(trimmed)) return <div className="chat-list-item numbered" key={i}><span>{trimmed.match(/^\d+/)?.[0]}.</span><div>{inline(trimmed.replace(/^\d+[.)]\s+/, ""))}</div></div>;
+    return <p key={i}>{inline(trimmed)}</p>;
+  })}</div>;
+}
+function Index() {
+  const [grade, setGrade] = useState("9º ano");
+  const [topic, setTopic] = useState("Equação do 2º grau");
+  const [generatedExercises, setGeneratedExercises] = useState<{question:string; options:string[]; answerIndex:number; explanation:string; steps:string[]}[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState("");
+  const [exerciseAnswers, setExerciseAnswers] = useState<Record<number, number>>({});
+  const [revealedExercises, setRevealedExercises] = useState<Record<number, boolean>>({});
+  const [difficulty, setDifficulty] = useState("No meu ritmo");
+  const [mode, setMode] = useState<"practice" | "doubt" | null>(null);
+  const [doubt, setDoubt] = useState("");
+  const [chat, setChat] = useState<{from: string; text: string}[]>([]);
+  const [screenshots, setScreenshots] = useState<{name: string; dataUrl: string}[]>([]);
+  const [isSendingDoubt, setIsSendingDoubt] = useState(false);
+  const [doubtError, setDoubtError] = useState("");
+  const screenshotInput = useRef<HTMLInputElement>(null);
+  async function addScreenshotFiles(fileList: FileList | File[]) {
+    const files = Array.from(fileList).filter((file) => file.type.startsWith("image/"));
+    const remaining = Math.max(0, 3 - screenshots.length);
+    if (files.length > remaining) setGenerationError("Você pode adicionar no máximo 3 prints.");
+    const accepted = files.slice(0, remaining);
+    const loaded = await Promise.all(accepted.map((file) => new Promise<{name:string;dataUrl:string}|null>((resolve) => {
+      if (file.size > 5 * 1024 * 1024) { resolve(null); return; }
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? {name:file.name || "print",dataUrl:reader.result} : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    })));
+    const valid = loaded.filter((item): item is {name:string;dataUrl:string} => item !== null);
+    setScreenshots((current) => [...current, ...valid].slice(0,3));
+    if (valid.length < accepted.length) setGenerationError("Algum print passou de 5 MB ou não pôde ser lido. Use imagens menores.");
+    else setGenerationError("");
   }
-  function restartQuiz() { setAnswers({}); setQuestionIndex(0); setStage("quiz"); }
+  function handleScreenshotPaste(event: ClipboardEvent<HTMLElement>) {
+    const files = Array.from(event.clipboardData.items).filter((item)=>item.type.startsWith("image/")).map((item)=>item.getAsFile()).filter((file):file is File=>file!==null);
+    if(files.length){event.preventDefault();void addScreenshotFiles(files);}
+  }
+  function handleScreenshotSelect(event: ChangeEvent<HTMLInputElement>) {
+    if(event.target.files) void addScreenshotFiles(event.target.files);
+    event.target.value="";
+  }
+
+  function chooseGrade(value: string) {
+    setGrade(value);
+    setGeneratedExercises([]);
+    setGenerationError("");
+  }
+  async function generateExercises() {
+    if (!topic.trim()) { setGenerationError("Escreva a matéria ou o assunto que quer estudar."); setMode("practice"); return; }
+    setMode("practice"); setIsGenerating(true); setGenerationError(""); setGeneratedExercises([]); setExerciseAnswers({}); setRevealedExercises({});
+    try {
+      const response = await fetch("/api/generate-exercises", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ grade, topic: topic.trim(), difficulty, images: screenshots.map((item) => item.dataUrl) }) });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível gerar os exercícios agora.");
+      setGeneratedExercises(payload.exercises);
+    } catch (error) {
+      setGenerationError(error instanceof Error ? error.message : "Erro ao gerar exercícios. Tente novamente.");
+    } finally { setIsGenerating(false); }
+  }
+  async function sendDoubt() {
+    const text=doubt.trim();
+    if((!text && screenshots.length===0)||isSendingDoubt)return;
+    setChat(items=>[...items,{from:"you",text:text||"Pode me explicar a questão dos prints?"}]);
+    setDoubt("");setDoubtError("");setIsSendingDoubt(true);
+    try {
+      const response=await fetch("/api/ask-doubt",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({grade,question:text,images:screenshots.map(item=>item.dataUrl)})});
+      const payload=await response.json();
+      if(!response.ok)throw new Error(payload.error||"Não foi possível responder agora.");
+      setChat(items=>[...items,{from:"friend",text:payload.answer}]);
+    } catch(error) {setDoubtError(error instanceof Error?error.message:"Erro ao enviar a dúvida. Tente novamente.");}
+    finally {setIsSendingDoubt(false);}
+  }
 
   return (
-    <main className="ocean-site">
-      <header className="nav">
-        <a className="brand" href="#top" aria-label="Mar Sem Marcas, início"><span className="brand-mark"><Waves size={21} /></span><span>MAR SEM <b>MARCAS.</b></span></a>
-        <div className="nav-label"><span className="status-dot" /> GUIA DE CONSCIÊNCIA MARINHA</div>
-        <a className="nav-help" href="#sobre">Sobre o guia <ArrowRight size={15} /></a>
+    <main className="site-shell">
+      <header className="topbar">
+        <a className="brand" href="#inicio" aria-label="Xplica, início"><img src="/xplica-logo.svg" alt="Xplica — matemática do seu jeito" /></a>
+        <nav className="desktop-nav"><a href="#como-funciona">Como funciona</a><a href="#experiencias">O que você pode fazer</a><a href="#conteudos">Conteúdos</a></nav>
+        <a className="top-cta" href="#comecar">Bora estudar <ArrowRight size={16} /></a>
       </header>
 
-      <section className="hero-ocean" id="top">
-        <div className="hero-overlay" />
-        <div className="hero-content">
-          <div className="kicker"><span /> UMA EXPERIÊNCIA DE MERGULHO MAIS CONSCIENTE</div>
-          <h1>O oceano não é<br />apenas um lugar.<br /><em>É um compromisso.</em></h1>
-          <p>Antes de mergulhar, conheça o mundo que veio visitar. Pequenas atitudes na superfície fazem uma diferença enorme lá embaixo.</p>
-          <button className="button-light" onClick={() => setStage("reading")}>Começar preparação <ArrowDown size={17} /></button>
-          <div className="hero-note"><LockKeyhole size={15} /><span>Leitura + avaliação de conhecimento antes do mergulho</span></div>
+      <section className="hero" id="inicio">
+        <div className="hero-copy">
+          <div className="eyebrow"><span className="eyebrow-dot" /> MATEMÁTICA DO SEU JEITO</div>
+          <h1>Matemática fica<br />mais fácil com um<br /><span>amigo do lado.</span></h1>
+          <p className="hero-description">Aprenda no seu ritmo, pratique sem medo e tire suas dúvidas. Um passo de cada vez — você consegue.</p>
+          <div className="hero-actions"><a className="button-primary" href="#comecar">Vamos nessa <ArrowRight size={17} /></a><a className="text-link" href="#como-funciona">Conheça a ideia <span>↓</span></a></div>
+          <div className="hero-proof"><div className="avatar-stack"><span>✦</span><span>∑</span><span>π</span></div><p><strong>Do 4º ano ao Ensino Médio</strong><br />Feito para aprender de verdade.</p></div>
         </div>
-        <div className="hero-bottom"><span>GUIA PRÉ-MERGULHO · PROTÓTIPO 01</span><span>01 — 05 <Waves size={17} /></span></div>
+        <div className="hero-art-wrap">
+          <div className="art-spark spark-one">✳</div><div className="art-spark spark-two">✦</div>
+          <div className="math-card card-back"><span className="mini-label">DESAFIO DO DIA</span><div className="mini-equation">x + 7 = 12</div><div className="mini-answer">x = 5 <Check size={13} /></div></div>
+          <div className="pixel-scene">
+            <div className="scene-sun" />
+            <div className="scene-cloud cloud-a" /><div className="scene-cloud cloud-b" />
+            <div className="scene-hill hill-a" /><div className="scene-hill hill-b" />
+            <div className="pixel-person"><div className="person-hair" /><div className="person-head" /><div className="person-body" /><div className="person-arm" /><div className="person-leg leg-a" /><div className="person-leg leg-b" /></div>
+            <div className="pixel-book"><div /><div /><div /></div>
+            <div className="scene-ground" />
+          </div>
+          <div className="floating-note"><span className="note-icon"><Sparkles size={17} /></span><div><strong>Você tá evoluindo!</strong><small>Cada exercício conta ✨</small></div></div>
+          <div className="hero-caption">PEQUENOS PASSOS, GRANDES DESCOBERTAS <span>↗</span></div>
+        </div>
       </section>
 
-      {stage === "intro" && <section className="intro-strip"><div className="intro-icon"><Compass size={22} /></div><div><strong>Um mergulho começa antes de entrar na água.</strong><p>Leia os cinco temas e, ao final, responda a um quiz de 10 perguntas. É necessário acertar pelo menos 8 para concluir esta etapa educativa.</p></div><button className="text-button" onClick={() => setStage("reading")}>Entendi <ArrowRight size={16} /></button></section>}
+      <section className="ticker" aria-label="Nosso jeito de aprender"><div>SEM PRESSA <span>✳</span> SEM JULGAMENTO <span>✳</span> NO SEU RITMO <span>✳</span> CURIOSIDADE SEMPRE <span>✳</span> SEM PRESSA <span>✳</span> SEM JULGAMENTO <span>✳</span> NO SEU RITMO <span>✳</span></div></section>
 
-      {stage === "reading" && <section className="guide-section" id="guia">
-        <div className="section-top"><div><div className="kicker dark-kicker">ANTES DE ENTRAR NA ÁGUA</div><h2>Conhecer para<br /><em>preservar.</em></h2></div><div className="reading-counter"><span>{read.length.toString().padStart(2, "0")}</span> / 05 temas lidos<div className="progress-track"><i style={{ width: `${read.length * 20}%` }} /></div></div></div>
-        <div className="topic-list">{topics.map((topic, i) => <article className={read.includes(i) ? "topic-card topic-read" : "topic-card"} key={topic.number}>
-          <div className="topic-number">{topic.number}</div><div className="topic-body"><div className="topic-tag">{topic.tag}</div><h3>{topic.title}</h3><p className="topic-summary">{topic.summary}</p><details><summary>Ler mais <ChevronRight size={15} /></summary><p>{topic.detail}</p></details></div><div className="topic-symbol">{topic.icon}</div>
-          <button className={read.includes(i) ? "read-button is-read" : "read-button"} onClick={() => markRead(i)}>{read.includes(i) ? <><Check size={15} /> Lido</> : "Marcar como lido"}</button>
-        </article>)}</div>
-        <div className="quiz-gate"><div><span className="gate-icon"><Leaf size={20} /></span><div><strong>Pronto para testar o que aprendeu?</strong><p>{read.length < 5 ? `Marque os ${5 - read.length} tema(s) restante(s) como lidos para liberar a avaliação.` : "Todos os temas foram lidos. A avaliação está liberada."}</p></div></div><button disabled={read.length < 5} className="button-dark" onClick={startQuiz}>Iniciar quiz <ArrowRight size={16} /></button></div>
-      </section>}
+      <section className="experience-section section-pad" id="experiencias">
+        <div className="section-heading"><div><div className="eyebrow">UM JEITO MAIS LEVE</div><h2>Por onde vamos<br /><span>começar?</span></h2></div><p>Não existe um único jeito de aprender. Escolha o que faz sentido pra você hoje.</p></div>
+        <div className="experience-grid">
+          <article className="experience-card learn-card"><div className="card-topline"><span className="card-number">01 / APRENDER</span><span className="card-icon"><BookOpen size={20} /></span></div><div className="doodle doodle-book">▤</div><h3>Quero entender<br />melhor.</h3><p>Explicações claras, exemplos do dia a dia e conceitos que finalmente fazem sentido.</p><a href="#comecar" onClick={() => setMode("practice")}>Aprender um assunto <ArrowRight size={16} /></a></article>
+          <article className="experience-card practice-card"><div className="card-topline"><span className="card-number">02 / PRATICAR</span><span className="card-icon"><Target size={20} /></span></div><div className="doodle doodle-target">✳</div><h3>Quero colocar<br />em prática.</h3><p>Exercícios no seu nível, com dicas e explicações para cada resposta.</p><a href="#comecar" onClick={() => setMode("practice")}>Montar exercícios <ArrowRight size={16} /></a></article>
+          <article className="experience-card doubt-card"><div className="card-topline"><span className="card-number">03 / PERGUNTAR</span><span className="card-icon"><MessageCircle size={20} /></span></div><div className="doodle doodle-question">?</div><h3>Travei numa<br />questão.</h3><p>Pode perguntar. A gente divide o problema em passos menores, sem julgamento.</p><a href="#comecar" onClick={() => setMode("doubt")}>Tirar uma dúvida <ArrowRight size={16} /></a></article>
+        </div>
+      </section>
 
-      {stage === "quiz" && <section className="quiz-section"><div className="quiz-heading"><div className="kicker dark-kicker">AVALIAÇÃO PRÉ-MERGULHO</div><h2>Conhecimento é<br /><em>proteção.</em></h2><p>Responda com atenção. Você precisa de 8 acertos em 10 para concluir.</p><div className="quiz-progress"><span>PERGUNTA {String(questionIndex + 1).padStart(2, "0")} / 10</span><div className="progress-track"><i style={{ width: `${(questionIndex + 1) * 10}%` }} /></div></div></div>
-        <div className="quiz-card"><div className="quiz-card-top"><span>QUESTÃO {String(questionIndex + 1).padStart(2, "0")}</span><span><Waves size={15} /> CONSCIÊNCIA OCEÂNICA</span></div><h3>{quizQuestions[questionIndex].q}</h3><div className="answer-list">{quizQuestions[questionIndex].options.map((option, i) => <button key={option} className={answers[questionIndex] === i ? "answer-option chosen" : "answer-option"} onClick={() => setAnswers((current) => ({ ...current, [questionIndex]: i }))}><span className="answer-letter">{String.fromCharCode(65 + i)}</span><span>{option}</span>{answers[questionIndex] === i && <Check size={17} />}</button>)}</div><div className="quiz-card-footer"><button className="back-button" onClick={() => questionIndex === 0 ? setStage("reading") : setQuestionIndex(questionIndex - 1)}><ArrowLeft size={16} /> Anterior</button><span>{Object.keys(answers).length} de 10 respondidas</span>{questionIndex < 9 ? <button className="button-dark" disabled={answers[questionIndex] === undefined} onClick={() => setQuestionIndex(questionIndex + 1)}>Próxima <ArrowRight size={16} /></button> : <button className="button-dark" disabled={Object.keys(answers).length !== 10} onClick={finishQuiz}>Ver resultado <Check size={16} /></button>}</div></div>
-      </section>}
+      <section className="how-section section-pad" id="como-funciona">
+        <div className="how-illustration"><div className="how-sticker sticker-top">PASSO A PASSO <span>↘</span></div><div className="big-pixel-star">✳</div><div className="how-equation"><span>2x</span><b>+</b><span>4</span><b>=</b><span className="equation-highlight">10</span></div><div className="how-check"><Check size={20} /></div><div className="how-sticker sticker-bottom">OPA, ACERTOU! ✦</div></div>
+        <div className="how-copy"><div className="eyebrow">AQUI, ERRAR FAZ PARTE</div><h2>Não precisa<br />saber tudo.<br /><span>Só começar.</span></h2><p>A ideia é trocar aquela sensação de “não entendo nada” por “ahhh, agora entendi!”. Com exercícios do seu ano escolar e explicações sem complicação.</p><div className="how-points"><div><span>01</span><p><strong>Você escolhe</strong><br />Seu ano e o assunto que quer estudar.</p></div><div><span>02</span><p><strong>A gente pratica junto</strong><br />Uma questão por vez, com calma.</p></div><div><span>03</span><p><strong>Você ganha confiança</strong><br />Entendendo o porquê, não só decorando.</p></div></div></div>
+      </section>
 
-      {stage === "result" && <section className="result-section"><div className={passed ? "result-icon passed" : "result-icon"}>{passed ? <CircleCheck size={36} /> : <Waves size={36} />}</div><div className="kicker dark-kicker">RESULTADO DA AVALIAÇÃO</div><h2>{passed ? "Você está no caminho
-certo." : "Vamos reforçar
-esse conhecimento."}</h2><div className="score-line"><strong>{score}<span>/10</span></strong><div><b>{passed ? "Meta atingida" : "Ainda não atingiu a meta"}</b><p>{passed ? "Você alcançou a pontuação mínima deste guia educativo." : "Você precisa de pelo menos 8 acertos. Revise os temas e tente novamente."}</p></div></div><div className={passed ? "result-status passed-status" : "result-status"}>{passed ? <><Check size={17} /> ETAPA EDUCATIVA CONCLUÍDA</> : <><LockKeyhole size={17} /> ETAPA EDUCATIVA NÃO CONCLUÍDA</>}</div><p className="result-disclaimer">Este resultado confirma apenas a conclusão do guia educativo. Ele não substitui a instrução de segurança, a avaliação do instrutor ou os requisitos operacionais da empresa de mergulho.</p><div className="result-actions"><button className="button-dark" onClick={() => { setStage("reading"); setRead([]); }}>Revisar os temas <ArrowLeft size={16} /></button>{!passed && <button className="button-outline" onClick={restartQuiz}>Tentar quiz novamente <ArrowRight size={16} /></button>}</div></section>}
+      <section className="start-section section-pad" id="comecar">
+        <div className="start-heading"><div className="eyebrow"><span className="eyebrow-dot" /> SUA PRÓXIMA DESCOBERTA</div><h2>Tá, vamos de<br /><span>matemática?</span></h2><p>Escolha um caminho e a gente começa.</p></div>
+        <div className="start-panel" onPaste={handleScreenshotPaste}>
+          <div className="panel-head"><div className="panel-icon"><GraduationCap size={21} /></div><div><h3>Monte seu momento de estudo</h3><p>Do seu jeito, no seu tempo.</p></div><span className="panel-step">01 — 02</span></div>
+          <div className="field-grid"><label className="field-label">QUAL É O SEU ANO?<span className="select-wrap"><select value={grade} onChange={(e) => chooseGrade(e.target.value)}>{grades.map((g) => <option key={g}>{g}</option>)}</select><ChevronDown size={17} /></span></label><label className="field-label">QUAL MATÉRIA OU ASSUNTO?<span className="topic-input-wrap"><input className="topic-input" value={topic} onChange={(e) => { setTopic(e.target.value); setGeneratedExercises([]); }} placeholder="Ex.: equação do 2º grau, frações..." /><small>Escreva com suas palavras. A IA interpreta o tema.</small></span></label></div>
+          <div className="screenshot-area"><div className="screenshot-heading"><ImagePlus size={18}/><div><strong>Tem uma questão em print?</strong><small>Cole com Ctrl+V ou selecione até 3 imagens (PNG, JPG ou WEBP, até 5 MB cada).</small></div></div><input ref={screenshotInput} className="screenshot-file-input" type="file" accept="image/*" multiple onChange={handleScreenshotSelect}/><button type="button" className="screenshot-add" onClick={()=>screenshotInput.current?.click()} disabled={screenshots.length>=3}><Upload size={15}/> Adicionar prints ({screenshots.length}/3)</button>{screenshots.length>0&&<div className="screenshot-list">{screenshots.map((item,i)=><div className="screenshot-thumb" key={item.dataUrl}><img src={item.dataUrl} alt={item.name}/><span>Print {i+1}</span><button type="button" onClick={()=>setScreenshots(current=>current.filter((_,j)=>j!==i))} aria-label={`Remover print ${i+1}`}><X size={14}/></button></div>)}</div>}{generationError&&!isGenerating&&<p className="screenshot-error">{generationError}</p>}</div><div className="difficulty-row"><span className="field-label">QUAL É O CLIMA DE HOJE?</span><div className="difficulty-options">{["Quero o básico", "No meu ritmo", "Pode desafiar"].map((d) => <button key={d} className={difficulty === d ? "difficulty-option active" : "difficulty-option"} onClick={() => setDifficulty(d)}>{d === "Quero o básico" ? "🌱" : d === "No meu ritmo" ? "🌿" : "🚀"} {d}</button>)}</div></div>
+          <div className="mode-actions"><button className="mode-button primary-mode" onClick={generateExercises}><span className="mode-symbol"><Target size={19} /></span><span><strong>Quero praticar</strong><small>A IA cria exercícios para o seu ano</small></span><ArrowRight size={18} /></button><button className="mode-button" onClick={() => setMode("doubt")}><span className="mode-symbol question-symbol"><CircleHelp size={19} /></span><span><strong>Tenho uma dúvida</strong><small>Vamos pensar juntos</small></span><ArrowRight size={18} /></button></div>
+          {mode === "practice" && <div className="demo-panel"><div className="demo-top"><span className="demo-tag">EXERCÍCIOS PERSONALIZADOS COM IA</span><button className="close-demo" onClick={() => setMode(null)} aria-label="Fechar"><X size={17} /></button></div><p className="demo-meta">{grade} · {topic} · {difficulty}</p>{isGenerating ? <div className="ai-loading"><Sparkles size={22} /><h3>Preparando seus exercícios...</h3><p>A IA está interpretando o assunto e adaptando a explicação ao seu ano escolar.</p></div> : generationError ? <div className="ai-error"><p>{generationError}</p><button className="ai-retry" onClick={generateExercises}>Tentar novamente <RefreshCw size={15} /></button></div> : generatedExercises.length > 0 ? <><p className="ai-intro">Criamos {generatedExercises.length} questões sobre <strong>{topic}</strong>, com linguagem e dificuldade adequadas ao {grade}.</p>{generatedExercises.map((exercise, index) => <article className="generated-exercise" key={index}><div className="exercise-count">QUESTÃO {index + 1} DE {generatedExercises.length}</div><MathText text={exercise.question} className="exercise-question" /><div className="answer-options">{exercise.options.map((option, optionIndex) => <button key={optionIndex} onClick={() => setExerciseAnswers(prev => ({...prev, [index]: optionIndex}))} className={exerciseAnswers[index] === optionIndex ? "answer-option selected" : "answer-option"}><span>{String.fromCharCode(65 + optionIndex)}</span><MathText text={option} className="option-math" />{revealedExercises[index] && optionIndex === exercise.answerIndex && <Check size={17} />}</button>)}</div>{exerciseAnswers[index] !== undefined && <button className="reveal-answer" onClick={() => setRevealedExercises(prev => ({...prev, [index]: true}))}>{revealedExercises[index] ? "Explicação exibida" : "Ver resposta e explicação"} <ArrowRight size={15} /></button>}{revealedExercises[index] && <div className={exerciseAnswers[index] === exercise.answerIndex ? "feedback correct" : "feedback incorrect"}><strong>{exerciseAnswers[index] === exercise.answerIndex ? "Boa! Você acertou." : "Vamos aprender com essa tentativa."}</strong><p><strong>Resposta:</strong> {exercise.options[exercise.answerIndex]}</p><MathText text={exercise.explanation} className="feedback-math" />{exercise.steps?.length > 0 && <ol>{exercise.steps.map((step, stepIndex) => <li key={stepIndex}><MathText text={step} /></li>)}</ol>}</div>}</article>)}<button className="ai-retry" onClick={generateExercises}>Gerar novos exercícios <RefreshCw size={15} /></button></> : <p>Peça para gerar os exercícios para começar.</p>}</div>}
+          {mode === "doubt" && <div className="demo-panel"><div className="demo-top"><span className="demo-tag">ESPAÇO DE DÚVIDAS</span><button className="close-demo" onClick={() => setMode(null)} aria-label="Fechar"><X size={17} /></button></div><h3>O que está pegando?</h3><p className="doubt-intro">Escreva sua dúvida ou envie prints da questão. Você pode colar imagens com Ctrl+V na área de estudo ou usar o botão acima.</p><div className="chat-history">{chat.map((item, i) => <div key={i} className={item.from === "you" ? "chat-bubble user-bubble" : "chat-bubble friend-bubble"}><ChatMessage text={item.text} /></div>)}</div>{doubtError&&<p className="screenshot-error">{doubtError}</p>}{isSendingDoubt&&<p className="ai-loading">Analisando sua dúvida e os prints...</p>}<form className="doubt-form" onSubmit={e=>{e.preventDefault();void sendDoubt();}}><input value={doubt} onChange={e=>setDoubt(e.target.value)} placeholder="Escreva sua dúvida..."/><button type="submit" aria-label="Enviar dúvida" disabled={isSendingDoubt||(!doubt.trim()&&screenshots.length===0)}><ArrowRight size={18}/></button></form></div>}
+          <p className="panel-footnote"><Lightbulb size={15} /> Sem pressão: você pode mudar de ideia quando quiser.</p>
+        </div>
+      </section>
 
-      <section className="about-section" id="sobre"><div className="about-mark"><Waves size={26} /></div><div><div className="kicker">PARA QUEM CUIDA DO MAR</div><h2>Uma boa experiência<br />também protege <em>o oceano.</em></h2></div><p>Um guia digital pensado para centros de mergulho prepararem seus visitantes com informação clara, uma experiência simples e uma cultura de respeito ao ambiente marinho.</p></section>
-      <footer className="footer"><a className="brand" href="#top"><span className="brand-mark"><Waves size={18} /></span><span>MAR SEM <b>MARCAS.</b></span></a><span>PROTÓTIPO 01 · CONTEÚDO TEMPORÁRIO</span><span>Explore com respeito. Deixe apenas bolhas.</span></footer>
+      <section className="topics-section section-pad" id="conteudos"><div className="topics-head"><div><div className="eyebrow">UM UNIVERSO DE IDEIAS</div><h2>Tem matemática<br /><span>pra todo mundo.</span></h2></div><p>Do primeiro contato com frações aos desafios do ENEM, seu próximo passo começa aqui.</p></div><div className="topic-chips">{["➗ Operações", "½ Frações", "x Equações", "△ Geometria", "% Porcentagem", "π Funções", "↗ Estatística", "√ Raízes"].map((t) => <span key={t}>{t}</span>)}</div><div className="topics-bottom"><span>4º ANO — 3º ANO DO ENSINO MÉDIO</span><span>APRENDER É UM CAMINHO <span className="pixel-heart">♥</span></span></div></section>
+
+      <footer className="footer"><a className="brand" href="#inicio"><img src="/xplica-logo.svg" alt="Xplica" /></a><p>Feito pra aprender junto. <span>✳</span></p><a href="#inicio" className="back-top">Voltar ao topo ↑</a></footer>
     </main>
   );
 }
